@@ -1,0 +1,44 @@
+Test Case:
+
+test: sendMessage
+purpose: Check that NullPointTexting sends message properly to the right person.
+input 1 : "Hi, Daaaaaavvveeeeeeeeeee!!!!!!!", "Dave"
+input 2 : "Hey, nice shirt dude.", "Johnny" 
+
+test: receiveMessage
+purpose: Checks that messages received was properly converted to the formatted String.
+input: COMING SOON 
+output: "Dave \n I like orange juice. \nJohnny\n Cool story bro. \n"
+
+test: login valid successful
+purpose: checks that a valid username successfully connected to the server.
+input: "Johnny"
+output: [Welcome message]
+
+
+test: login valid unsuccessful
+purpose: checks that a valid username could not successfully connected to the server.
+input: "Dave"
+output: [Sorry message]
+
+test: login invalid fail
+purpose: checks that an invalid username could not successfully connected to the server.
+input: "|)@\/3"
+output: [Error Message]
+
+
+test: login duplicate unsuccessful
+purpose: checks that duplicate username could not successfully connect to the server.
+input: "Johnny"
+output: [Error Message]
+
+test: logout
+purpose:  checks that the user properly disconnects from the server.
+output: [logout message]
+
+
+//Template
+test:
+purpose: 
+input:
+output:

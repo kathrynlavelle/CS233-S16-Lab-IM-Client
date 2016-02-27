@@ -1,0 +1,14 @@
+NullPointTexting
+
+- user : IMConnection
+
+sendMessage(String msg, String toWhom)
+receiveMessage() : String
++login(string) : String
+#login(interface)
+logout()
+
+
+
+
+ 
