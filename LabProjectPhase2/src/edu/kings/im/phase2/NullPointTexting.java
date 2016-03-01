@@ -1,6 +1,8 @@
 package edu.kings.im.phase2;
 
 import edu.kings.im.IMConnection;
+import edu.kings.im.IllegalNameException;
+import edu.kings.im.RealIMConnection;
 
 /**
  * Control class for Kings Instant Messenger program.
@@ -11,12 +13,19 @@ import edu.kings.im.IMConnection;
  */
 public class NullPointTexting {
 	
+	/**Represents the name for all users.*/
+	private final static String BLAST;
+	
 	/** Keeps track of the current user. */
 	private IMConnection user;
 	
+	static {
+		 BLAST = "EVERYONE";
+	}
+	
 	/** Constructor for NullPointTexting. */
 	public NullPointTexting() {
-		//TODO: implement.
+		user = null;
 	}
 	
 	/**
@@ -25,8 +34,7 @@ public class NullPointTexting {
 	 * @return
 	 */
 	protected IMConnection getUser() {
-		//TODO: implement.
-		return null;
+		return user;
 	}
 	
 	/**
@@ -35,7 +43,7 @@ public class NullPointTexting {
 	 * @param daUser
 	 */
 	protected void setUser(IMConnection daUser) {
-		//TODO: implement
+		user = daUser;
 	}
 	
 	/**
@@ -45,7 +53,11 @@ public class NullPointTexting {
 	 * @param toWhom
 	 */
 	public void sendMessage(String message, String toWhom) {
-		//TODO: implement
+		if(toWhom.equals(BLAST)) {
+			user.spamEveryone(message);
+		} else {
+			user.sendMessage(message, toWhom);
+		}
 	}
 	
 	/**
@@ -65,9 +77,9 @@ public class NullPointTexting {
 	 * @param userName
 	 * @return
 	 */
-	public String login(String userName) {
-		//TODO: implement
-		return "I'm logged in now!";
+	public boolean login(String userName) {
+		IMConnection newConnection = RealIMConnection.getInstance(userName);
+		return login(newConnection);
 	}
 	
 	/** 
@@ -77,16 +89,26 @@ public class NullPointTexting {
 	 * @param aConnection
 	 * @return
 	 */
-	protected String login(IMConnection aConnection) {
-		//TODO: implement
-		return "Hey, what's up";
+	protected boolean login(IMConnection aConnection) {
+		//TODO: talk to Dr. Jump, about statuslistener.
+	
+		boolean loginSuccessful = false;
+		try {
+			aConnection.connect();
+		}
+		catch(IllegalNameException ex) {
+			//Print out invalid name message
+			ex.printStackTrace();
+		}
+		
+		return loginSuccessful;
 	}
 	 
 	/**
 	 * Logs the user out of the server.
 	 */
 	public void logout() {
-		//TODO: implement
+		user.disconnect();
 	}
 	
 }
