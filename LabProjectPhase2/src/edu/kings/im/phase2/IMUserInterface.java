@@ -10,6 +10,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
+import javax.naming.InvalidNameException;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -24,17 +25,22 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 
+import edu.kings.im.IMConnection;
+import edu.kings.im.IMEventListener;
+import edu.kings.im.IllegalNameException;
+import edu.kings.im.Message;
+import edu.kings.im.RealIMConnection;
+import edu.kings.im.StatusListener;
+
 /** GUI for NullPointTexting.
  * 
  * @author Dave Paupst
  * @author Johnny Collado
  * @version 02/26/2016
  */
-public class IMUserInterface  implements ActionListener  {
+public class IMUserInterface  implements ActionListener {
 	
 	private JFrame frame;
-	
-	private NullPointTexting npt;
 	
 	private JTextArea chatBox;
 	
@@ -46,12 +52,31 @@ public class IMUserInterface  implements ActionListener  {
 	
 	private JMenuBar menuBar;
 	
+	private boolean connected;
+	
+	
+	private JFrame loginFrame;
+	
+	/**Represents the name for all users.*/
+	public final static String BLAST;
+	
+	/** Keeps track of the current user. */
+	private IMConnection user;
+	
+	static {
+		 BLAST = "EVERYONE";
+	}
+	
 	/**
 	 * Constructor.
 	 */
 	public IMUserInterface() {
 		//TODO: Implement me.
 		
+		//variable set up
+		connected = false;
+		
+		//Frame set up
 		frame = new JFrame();
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setPreferredSize(new Dimension(600, 600));
@@ -93,9 +118,10 @@ public class IMUserInterface  implements ActionListener  {
 		
 		
 		users = new JComboBox<String>();
+		users.addItem(BLAST);
 		
 		
-		JButton sendButton = new JButton("Send");
+		sendButton = new JButton("Send");
 		sendButton.addActionListener(this);
 		
 		userSend.add(users);
@@ -130,77 +156,177 @@ public class IMUserInterface  implements ActionListener  {
 		
 		frame.setJMenuBar(menuBar);
 		
-		
-		//frame.pack();
-		//frame.setVisible(true);
 		frame.setVisible(false);
 		
-		if(login()) {
-			frame.pack();
-			frame.setVisible(true);
-		}
-		else {
-			closeWindow();
-		}
-		
-		
+		login();
 	}
 	
-	private boolean login() {
+	private void login() {
 		//TODO: add Logo.
-		boolean loggedin = false;
 		
 		//Login setup
+		loginFrame = new JFrame("Login");
+		loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		loginFrame.setSize(300, 200);
+		
+		
 		JPanel loginPanel = new JPanel(new GridBagLayout());
 		GridBagConstraints loginC = new GridBagConstraints();
 		
-		JTextField name = new JTextField();
+		final JTextField name = new JTextField();
 		name.setBorder(BorderFactory.createTitledBorder("Username"));
 
 		
 
-		loginC.fill = GridBagConstraints.BOTH;
-		loginC.gridx = 1;
-		loginC.gridy = 0;
+		loginC.fill = GridBagConstraints.HORIZONTAL;
+		loginC.gridx = 0;
+		loginC.gridy = 1;
 		loginC.weightx = .7;
-		loginC.weighty = 1;
+		loginC.weighty = .8;
 		
 		loginPanel.add(name, loginC);
 		
 		//login prompt and logic
 		
-		int answer = JOptionPane.showConfirmDialog(frame, loginPanel,"Login",
-				JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+		loginFrame.add(loginPanel, BorderLayout.CENTER);
 		
+		JButton loginButton = new JButton("Login");
+		loginButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				String username = name.getText();
+				IMConnection newUser = RealIMConnection.getInstance(username);
+				newUser.addConnectionListener(new IMStatusListener());
+				
+				
+				try {
+				newUser.connect();	
+				}
+				catch(IllegalNameException ine) {
+					JOptionPane.showMessageDialog(frame, ine.getMessage());
+				}
+				
+				
+			}
+		});
 		
-		if(answer == JOptionPane.OK_OPTION) {
-			String username = name.getText();
-			String testUser = "Dave";
-			
-			//use control class login method to determine if they are able to login.
-			if(testUser.equals(username)) {
-				loggedin = true;
-			}
-			else {
-				//TODO: JOption ErrorMessage
-				loggedin = login();
-			}
-			
+		loginC.fill = GridBagConstraints.NONE;
+		loginC.gridx = 0;
+		loginC.gridy = 2;
+		loginC.weightx = .7;
+		loginC.weighty = .05;
+		
+		loginPanel.add(loginButton, loginC);
+		
+		loginFrame.setVisible(true);
+		
+	}
+	
+	/**
+	 * Potential protected getter for User.
+	 * 
+	 * @return
+	 */
+	protected IMConnection getUser() {
+		return user;
+	}
+	
+	/**
+	 * Potential protected setter for User.
+	 * 
+	 * @param daUser
+	 */
+	protected void setUser(IMConnection daUser) {
+		user = daUser;
+	}
+	
+	/**
+	 * Sends a message to specified user.
+	 * 
+	 * @param message
+	 * @param toWhom
+	 */
+	public void sendMessage(String message, String toWhom) {
+		if(toWhom.equals(BLAST)) {
+			user.spamEveryone(message);
+		} else {
+			user.sendMessage(message, toWhom);
 		}
-		
-		return loggedin;
 	}
 	
 	
 	private void closeWindow() {
 		//TODO: Implement Logout;
-		//npt.logout();
+		user.disconnect();
 		System.exit(0);
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
-		// TODO Auto-generated method stub
+		// TODO Implement for send button.
+		String msg = messageBox.getText();
+		String recipient = (String) users.getSelectedItem();
+		if(msg != null && !msg.trim().equals("")) {
+			sendMessage(msg, recipient);
+		}
+	}
+
+
+	
+	
+	
+	
+	private class IMStatusListener implements StatusListener {
+		
+		@Override
+		public void connectionRejected(RealIMConnection arg0) {
+			// TODO When login false.
+			JOptionPane.showMessageDialog(frame, "This username is taken.");
+			
+		}
+
+		@Override
+		public void connectionUpdate(RealIMConnection arg0, boolean connected) {
+			// TODO implement login process.
+			if(connected) {
+				frame.pack();
+				frame.setVisible(true);
+				loginFrame.dispose();
+				arg0.addIMEventListener(new MessageListener());
+				setUser(arg0);
+			}
+		}
+
+	}
+	
+	private class MessageListener implements IMEventListener {
+
+		@Override
+		public void messagesReceived(Iterable<Message> arg0) {
+			// TODO implement add to chatBox
+			for (Message msg : arg0) {
+				String message = String.format("%s\n\t%s\n", msg.getSender(), msg.getText());
+				chatBox.append(message);
+			}
+			
+		}		
+
+		@Override
+		public void userOffline(String arg0) {
+			// TODO remove user from users
+			users.removeItem(arg0);		
+		}
+
+		@Override
+		public void userOnline(String arg0) {
+			// TODO add user to users
+			users.addItem(arg0);
+		}
 		
 	}
+
 }
+
+
