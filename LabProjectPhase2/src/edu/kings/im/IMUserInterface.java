@@ -1,16 +1,18 @@
-package edu.kings.im.phase2;
+package edu.kings.im;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Event;
+import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
-import javax.naming.InvalidNameException;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -41,30 +43,30 @@ import edu.kings.im.StatusListener;
  */
 public class IMUserInterface implements ActionListener {
 
-	/** Frame. */
-	private JFrame frame;
-	
-	/** Chat box for viewing messages. */
-	private JTextArea chatBox;
-	
-	/** Message box for sending messages. */
-	private JTextField messageBox;
-	
-	/** Button to send messages. */
-	private JButton sendButton;
-	
-	/** Menu containing users. */
-	private JComboBox<String> users;
-	
-	/** Menu bar. */
-	private JMenuBar menuBar;
-	
-	/** */
-	private JFrame loginFrame;
-	
 	/** Represents the name for all users. */
 	public final static String BLAST;
-	
+
+	/** Frame. */
+	private JFrame frame;
+
+	/** Chat box for viewing messages. */
+	private JTextArea chatBox;
+
+	/** Message box for sending messages. */
+	private JTextField messageBox;
+
+	/** Button to send messages. */
+	private JButton sendButton;
+
+	/** Menu containing users. */
+	private JComboBox<String> users;
+
+	/** Menu bar. */
+	private JMenuBar menuBar;
+
+	/** Login frame. */
+	private JFrame loginFrame;
+
 	/** Keeps track of the current user. */
 	private IMConnection user;
 
@@ -84,6 +86,7 @@ public class IMUserInterface implements ActionListener {
 		// Setup the chat box.
 		chatBox = new JTextArea();
 		chatBox.setLineWrap(true);
+		chatBox.setEditable(false);
 
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane
@@ -99,6 +102,7 @@ public class IMUserInterface implements ActionListener {
 
 		messageBox = new JTextField();
 		messageBox.setBorder(BorderFactory.createTitledBorder("Enter Message"));
+		messageBox.addActionListener(this);
 
 		messageConstraints.fill = GridBagConstraints.BOTH;
 		messageConstraints.gridx = 0;
@@ -151,30 +155,86 @@ public class IMUserInterface implements ActionListener {
 
 		frame.setVisible(false);
 
-		login();
+		loginSetup();
 	}
 
-	private void login() {
-		// TODO: add Logo.
+	/**
+	 * Getter for text area used in testing.
+	 * 
+	 * @return the chatBox.
+	 */
+	protected JTextArea getTextArea() {
+		return chatBox;
+	}
 
+	/**
+	 * Getter for combo box used in testing.
+	 * 
+	 * @return the users.
+	 */
+	protected JComboBox<String> getComboBox() {
+		return users;
+	}
+
+	/**
+	 * Getter for text field used in testing.
+	 * 
+	 * @return the messageBox.
+	 */
+	protected JTextField getMessageBox() {
+		return messageBox;
+	}
+
+	/**
+	 * Getter for send button used in testing.
+	 * 
+	 * @return the sendButton.
+	 */
+	protected JButton getSendButton() {
+		return sendButton;
+	}
+
+	/**
+	 * Sets up the login frame.
+	 */
+	private void loginSetup() {
 		// Login setup
 		loginFrame = new JFrame("Login");
 		loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		loginFrame.setSize(300, 200);
+		loginFrame.setSize(500, 500);
 
 		JPanel loginPanel = new JPanel(new GridBagLayout());
 		GridBagConstraints loginC = new GridBagConstraints();
 
-		final JTextField name = new JTextField();
-		name.setBorder(BorderFactory.createTitledBorder("Username"));
+		// adding logo
+
+		loginC.fill = GridBagConstraints.BOTH;
+		loginC.gridx = 0;
+		loginC.gridy = 0;
+		loginC.weightx = 1;
+		loginC.weighty = .8;
+
+		ImageView imgView = new ImageView("NullPointDexter Logo.jpg");
+		loginPanel.add(imgView, loginC);
+
+		final JTextField NAME_ENTRY = new JTextField();
+		NAME_ENTRY.setBorder(BorderFactory.createTitledBorder("Username"));
+		NAME_ENTRY.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				login(NAME_ENTRY.getText());
+
+			}
+		});
 
 		loginC.fill = GridBagConstraints.HORIZONTAL;
 		loginC.gridx = 0;
 		loginC.gridy = 1;
 		loginC.weightx = .7;
-		loginC.weighty = .8;
+		loginC.weighty = .1;
 
-		loginPanel.add(name, loginC);
+		loginPanel.add(NAME_ENTRY, loginC);
 
 		// login prompt and logic
 
@@ -185,15 +245,7 @@ public class IMUserInterface implements ActionListener {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				String username = name.getText();
-				IMConnection newUser = RealIMConnection.getInstance(username);
-				newUser.addConnectionListener(new IMStatusListener());
-
-				try {
-					newUser.connect();
-				} catch (IllegalNameException ine) {
-					JOptionPane.showMessageDialog(frame, ine.getMessage());
-				}
+				login(NAME_ENTRY.getText());
 
 			}
 		});
@@ -202,7 +254,7 @@ public class IMUserInterface implements ActionListener {
 		loginC.gridx = 0;
 		loginC.gridy = 2;
 		loginC.weightx = .7;
-		loginC.weighty = .05;
+		loginC.weighty = .1;
 
 		loginPanel.add(loginButton, loginC);
 
@@ -211,18 +263,27 @@ public class IMUserInterface implements ActionListener {
 	}
 
 	/**
-	 * Potential protected getter for User.
+	 * Uses the username to connect to the server.
 	 * 
-	 * @return
+	 * @param username
+	 *            Username inserted by the user.
 	 */
-	protected IMConnection getUser() {
-		return user;
+	public void login(String username) {
+		IMConnection newUser = RealIMConnection.getInstance(username);
+		newUser.addConnectionListener(new IMStatusListener());
+
+		try {
+			newUser.connect();
+		} catch (IllegalNameException ine) {
+			JOptionPane.showMessageDialog(frame, ine.getMessage());
+		}
 	}
 
 	/**
 	 * Potential protected setter for User.
 	 * 
 	 * @param daUser
+	 *            User being set.
 	 */
 	protected void setUser(IMConnection daUser) {
 		user = daUser;
@@ -232,7 +293,9 @@ public class IMUserInterface implements ActionListener {
 	 * Sends a message to specified user.
 	 * 
 	 * @param message
+	 *            Message to be sent.
 	 * @param toWhom
+	 *            User who is receiving message.
 	 */
 	public void sendMessage(String message, String toWhom) {
 		if (toWhom.equals(BLAST)) {
@@ -242,15 +305,16 @@ public class IMUserInterface implements ActionListener {
 		}
 	}
 
+	/**
+	 * Closes the IM frame and disconnects the user from the server.
+	 */
 	private void closeWindow() {
-		// TODO: Implement Logout;
 		user.disconnect();
 		System.exit(0);
 	}
 
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
-		// TODO Implement for send button.
 		String msg = messageBox.getText();
 		String recipient = (String) users.getSelectedItem();
 		if (msg != null && !msg.trim().equals("")) {
@@ -259,18 +323,21 @@ public class IMUserInterface implements ActionListener {
 		messageBox.setText("");
 	}
 
+	/**
+	 * This private class implements StatusListener.
+	 * 
+	 * @author Dave Paupst
+	 * @author Johnny Collado
+	 */
 	private class IMStatusListener implements StatusListener {
 
 		@Override
 		public void connectionRejected(RealIMConnection arg0) {
-			// TODO When login false.
 			JOptionPane.showMessageDialog(frame, "This username is taken.");
-
 		}
 
 		@Override
 		public void connectionUpdate(RealIMConnection arg0, boolean connected) {
-			// TODO implement login process.
 			if (connected) {
 				frame.pack();
 				frame.setVisible(true);
@@ -282,29 +349,73 @@ public class IMUserInterface implements ActionListener {
 
 	}
 
-	private class MessageListener implements IMEventListener {
+	/**
+	 * Returns an instance of MessageListener for testing purposes only.
+	 * 
+	 * @return an instance of MessageListener.
+	 */
+	protected MessageListener getMessageListenerInstance() {
+		return new MessageListener();
+	}
+
+	/**
+	 * This class implements IMEventListener. It is set for protected for
+	 * testing purposes.
+	 * 
+	 * @author Dave Paupst
+	 * @author Johnny Collado
+	 */
+	private final class MessageListener implements IMEventListener {
 
 		@Override
 		public void messagesReceived(Iterable<Message> arg0) {
-			// TODO implement add to chatBox
 			for (Message msg : arg0) {
 				String message = String.format("%s\n\t%s\n", msg.getSender(),
 						msg.getText());
 				chatBox.append(message);
 			}
-
 		}
 
 		@Override
 		public void userOffline(String arg0) {
-			// TODO remove user from users
 			users.removeItem(arg0);
 		}
 
 		@Override
 		public void userOnline(String arg0) {
-			// TODO add user to users
 			users.addItem(arg0);
+		}
+
+	}
+
+	/**
+	 * This class constructs the logo.
+	 * 
+	 * @author Dave Paupst
+	 * @author Johnny Collado
+	 */
+	private final class ImageView extends JPanel {
+		/** Generated serial UID. */
+		private static final long serialVersionUID = 6902974572544496618L;
+
+		/** The image. */
+		private Image img;
+
+		/**
+		 * Constructs the tool kit for the image.
+		 * 
+		 * @param imgFileName
+		 *            The name of the file.
+		 */
+		public ImageView(String imgFileName) {
+			img = Toolkit.getDefaultToolkit().getImage(imgFileName);
+		}
+
+		@Override
+		public void paintComponent(Graphics g) {
+			super.paintComponent(g);
+
+			g.drawImage(img, 0, 0, this.getWidth(), this.getHeight(), this);
 		}
 
 	}
