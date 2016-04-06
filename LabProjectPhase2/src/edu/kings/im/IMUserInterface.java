@@ -1,6 +1,7 @@
 package edu.kings.im;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Event;
 import java.awt.Graphics;
@@ -14,18 +15,26 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListModel;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
+import javax.swing.ListSelectionModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import edu.kings.im.IMConnection;
 import edu.kings.im.IMEventListener;
@@ -46,6 +55,12 @@ public class IMUserInterface implements ActionListener {
 	/** Represents the name for all users. */
 	public final static String BLAST;
 
+	private JFrame buddyFrame;
+	private JList<String> userList;
+	private DefaultListModel<String> listModel;
+	private String recipient;
+	private ImageIcon icon;
+	
 	/** Frame. */
 	private JFrame frame;
 
@@ -70,6 +85,8 @@ public class IMUserInterface implements ActionListener {
 	/** Keeps track of the current user. */
 	private IMConnection user;
 
+	private JTabbedPane chatBoxes;
+
 	static {
 		BLAST = "EVERYONE";
 	}
@@ -78,22 +95,43 @@ public class IMUserInterface implements ActionListener {
 	 * Constructor.
 	 */
 	public IMUserInterface() {
+		
+		icon = new ImageIcon("NullPointDexter Logo.jpg");
+		
+		buddyFrame = new JFrame("Buddy Frame");
+		buddyFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		buddyFrame.setPreferredSize(new Dimension(600, 600));
+		
+		listModel = new DefaultListModel<String>();
+		userList = new JList<String>(listModel);
+		userList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+		userList.setLayoutOrientation(JList.VERTICAL);
+		userList.setVisibleRowCount(-1);
+		userList.addListSelectionListener(new BuddyListSelectionListener());
+		
+		buddyFrame.add(userList, BorderLayout.CENTER);
+		
+		
+		
 		// Frame set up
-		frame = new JFrame();
+		frame = new JFrame("Chat Frame");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setPreferredSize(new Dimension(600, 600));
 
+		chatBoxes = new JTabbedPane();
+		frame.add(chatBoxes, BorderLayout.NORTH);
+		
 		// Setup the chat box.
-		chatBox = new JTextArea();
-		chatBox.setLineWrap(true);
-		chatBox.setEditable(false);
+		//chatBox = new JTextArea();
+		//chatBox.setLineWrap(true);
+		//chatBox.setEditable(false);
 
-		JScrollPane scrollPane = new JScrollPane();
-		scrollPane
-				.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-		scrollPane.setViewportView(chatBox);
+		//JScrollPane scrollPane = new JScrollPane();
+		//scrollPane
+		//		.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		//scrollPane.setViewportView(chatBox);
 
-		frame.add(scrollPane, BorderLayout.CENTER);
+		//frame.add(scrollPane, BorderLayout.CENTER);
 
 		// Setup message area.
 
@@ -113,15 +151,15 @@ public class IMUserInterface implements ActionListener {
 
 		// Send button & user list.
 
-		JPanel userSend = new JPanel(new GridLayout(2, 1));
+		JPanel userSend = new JPanel(new GridLayout());
 
-		users = new JComboBox<String>();
-		users.addItem(BLAST);
+		//users = new JComboBox<String>();
+		//users.addItem(BLAST);
 
 		sendButton = new JButton("Send");
 		sendButton.addActionListener(this);
 
-		userSend.add(users);
+		//userSend.add(users);
 		userSend.add(sendButton);
 
 		messageConstraints.fill = GridBagConstraints.BOTH;
@@ -275,7 +313,14 @@ public class IMUserInterface implements ActionListener {
 		try {
 			newUser.connect();
 		} catch (IllegalNameException ine) {
-			JOptionPane.showMessageDialog(frame, ine.getMessage());
+			//JOptionPane.showMessageDialog(frame, ine.getMessage());
+			JPanel loginPanel2 = new JPanel(new GridBagLayout());
+			JLabel incorrect = new JLabel("Please select a different UserName");
+			incorrect.setForeground(Color.blue);
+			// TODO: Make the text bigger.
+			loginPanel2.add(incorrect);
+			loginFrame.add(loginPanel2, BorderLayout.SOUTH);
+			loginFrame.setSize(500, 550);
 		}
 	}
 
@@ -303,6 +348,12 @@ public class IMUserInterface implements ActionListener {
 		} else {
 			user.sendMessage(message, toWhom);
 		}
+		for(int i = 0; i < chatBoxes.getTabCount(); i++) {
+			if (toWhom == chatBoxes.getTitleAt(i)) {
+				JTextArea chatArea = (JTextArea) chatBoxes.getComponentAt(i);
+				chatArea.append("Me: " + message);
+			}
+		}
 	}
 
 	/**
@@ -316,7 +367,8 @@ public class IMUserInterface implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
 		String msg = messageBox.getText();
-		String recipient = (String) users.getSelectedItem();
+		int selectedIndex = chatBoxes.getSelectedIndex();
+		recipient = chatBoxes.getTitleAt(selectedIndex);
 		if (msg != null && !msg.trim().equals("")) {
 			sendMessage(msg, recipient);
 		}
@@ -341,6 +393,8 @@ public class IMUserInterface implements ActionListener {
 			if (connected) {
 				frame.pack();
 				frame.setVisible(true);
+				buddyFrame.pack();
+				buddyFrame.setVisible(true);
 				loginFrame.dispose();
 				arg0.addIMEventListener(new MessageListener());
 				setUser(arg0);
@@ -370,20 +424,42 @@ public class IMUserInterface implements ActionListener {
 		@Override
 		public void messagesReceived(Iterable<Message> arg0) {
 			for (Message msg : arg0) {
-				String message = String.format("%s\n\t%s\n", msg.getSender(),
-						msg.getText());
-				chatBox.append(message);
+				String message = String.format("%s\n\t%s\n", msg.getSender(), msg.getText());
+				boolean found = false;
+				if (chatBoxes.getTabCount() > 0) {
+					for(int i = 0; i < chatBoxes.getTabCount(); i++) {
+						if (recipient == chatBoxes.getTitleAt(i)) {
+							JTextArea chatArea = (JTextArea) chatBoxes.getComponentAt(i);
+							chatArea.append(message);
+							found = true;
+						}
+					}
+				} 
+				if (!found) {
+					JTextArea chatArea = new JTextArea();
+					chatBoxes.addTab(recipient, null, chatArea);
+					chatArea.append(message);
+				}
+				
 			}
 		}
 
 		@Override
 		public void userOffline(String arg0) {
-			users.removeItem(arg0);
+			//users.removeItem(arg0);
+			listModel.removeElement(arg0);
+			//TODO: if there is a convo, close the tab
+			for(int i = 0; i < chatBoxes.getTabCount(); i++) {
+				if (arg0 == chatBoxes.getTitleAt(i)) {
+					chatBoxes.removeTabAt(i);
+				}
+			}
 		}
 
 		@Override
 		public void userOnline(String arg0) {
-			users.addItem(arg0);
+			//users.addItem(arg0);
+			listModel.addElement(arg0);
 		}
 
 	}
@@ -418,6 +494,33 @@ public class IMUserInterface implements ActionListener {
 			g.drawImage(img, 0, 0, this.getWidth(), this.getHeight(), this);
 		}
 
+	}
+	
+	private class BuddyListSelectionListener implements ListSelectionListener {
+
+		@Override
+		public void valueChanged(ListSelectionEvent arg0) {
+			if (arg0.getValueIsAdjusting() == false) {
+				if (userList.getSelectedIndex() != -1) {
+					recipient = listModel.getElementAt(userList.getSelectedIndex());
+					frame.setTitle(recipient);
+					boolean found = false;
+					if (chatBoxes.getTabCount() > 0) {
+						for(int i = 0; i < chatBoxes.getTabCount(); i++) {
+							if (recipient == chatBoxes.getTitleAt(i)) {
+								chatBoxes.setSelectedIndex(i);
+								found = true;
+							}
+						}
+					} 
+					if (!found) {
+						JTextArea chatArea = new JTextArea();
+						chatBoxes.addTab(recipient, null, chatArea);
+					}
+				} 
+			}	
+		}
+		
 	}
 
 }
