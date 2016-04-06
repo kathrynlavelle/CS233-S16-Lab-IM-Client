@@ -15,6 +15,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -31,6 +32,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
@@ -73,11 +75,9 @@ public class IMUserInterface implements ActionListener {
 	/** Button to send messages. */
 	private JButton sendButton;
 
-	/** Menu containing users. */
-	private JComboBox<String> users;
-
 	/** Menu bar. */
 	private JMenuBar menuBar;
+	private JMenuBar buddyMenuBar;
 
 	/** Login frame. */
 	private JFrame loginFrame;
@@ -172,10 +172,16 @@ public class IMUserInterface implements ActionListener {
 		frame.add(messageArea, BorderLayout.SOUTH);
 
 		menuBar = new JMenuBar();
+		buddyMenuBar = new JMenuBar();
 
 		JMenu file = new JMenu("File");
 		file.setMnemonic(KeyEvent.VK_F);
 		menuBar.add(file);
+		
+		JMenu buddyFile = new JMenu("File");
+		buddyFile.setMnemonic(KeyEvent.VK_F);
+		buddyMenuBar.add(buddyFile);
+		
 
 		JMenuItem exit = new JMenuItem("Exit");
 		exit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F4,
@@ -186,12 +192,25 @@ public class IMUserInterface implements ActionListener {
 				closeWindow();
 			}
 		});
+		
+		JMenuItem buddyExit = new JMenuItem("Exit");
+		buddyExit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F4,
+				Event.ALT_MASK));
+		buddyExit.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				closeWindow();
+			}
+		});
 
 		file.add(exit);
+		buddyFile.add(buddyExit);
 
 		frame.setJMenuBar(menuBar);
+		buddyFrame.setJMenuBar(buddyMenuBar);
 
 		frame.setVisible(false);
+		
 
 		loginSetup();
 	}
@@ -203,15 +222,6 @@ public class IMUserInterface implements ActionListener {
 	 */
 	protected JTextArea getTextArea() {
 		return chatBox;
-	}
-
-	/**
-	 * Getter for combo box used in testing.
-	 * 
-	 * @return the users.
-	 */
-	protected JComboBox<String> getComboBox() {
-		return users;
 	}
 
 	/**
@@ -230,6 +240,10 @@ public class IMUserInterface implements ActionListener {
 	 */
 	protected JButton getSendButton() {
 		return sendButton;
+	}
+	
+	protected DefaultListModel<String> getList() {
+		return listModel;
 	}
 
 	/**
@@ -350,8 +364,13 @@ public class IMUserInterface implements ActionListener {
 		}
 		for(int i = 0; i < chatBoxes.getTabCount(); i++) {
 			if (toWhom == chatBoxes.getTitleAt(i)) {
-				JTextArea chatArea = (JTextArea) chatBoxes.getComponentAt(i);
-				chatArea.append("Me: " + message);
+				JScrollPane scrollArea = (JScrollPane) chatBoxes.getComponentAt(i);
+				JTextPane chatBubble = new JTextPane();
+				chatBubble.setBackground(Color.YELLOW);
+				chatBubble.setText("Me: \n\t" + message  + "\n");
+				scrollArea.add(chatBubble);
+				//chatArea.a("Me: \n\t" + message  + "\n");
+				
 			}
 		}
 	}
@@ -364,6 +383,7 @@ public class IMUserInterface implements ActionListener {
 		System.exit(0);
 	}
 
+	
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
 		String msg = messageBox.getText();
@@ -392,9 +412,13 @@ public class IMUserInterface implements ActionListener {
 		public void connectionUpdate(RealIMConnection arg0, boolean connected) {
 			if (connected) {
 				frame.pack();
+				frame.setLocationByPlatform(true);
 				frame.setVisible(true);
+				
 				buddyFrame.pack();
+				buddyFrame.setLocationByPlatform(true);
 				buddyFrame.setVisible(true);
+				
 				loginFrame.dispose();
 				arg0.addIMEventListener(new MessageListener());
 				setUser(arg0);
@@ -424,12 +448,16 @@ public class IMUserInterface implements ActionListener {
 		@Override
 		public void messagesReceived(Iterable<Message> arg0) {
 			for (Message msg : arg0) {
-				String message = String.format("%s\n\t%s\n", msg.getSender(), msg.getText());
+				String sender = String.format("%s\n\t", msg.getSender());
+				String message = String.format("%s\n", msg.getText());
 				boolean found = false;
 				if (chatBoxes.getTabCount() > 0) {
 					for(int i = 0; i < chatBoxes.getTabCount(); i++) {
 						if (recipient == chatBoxes.getTitleAt(i)) {
+							
 							JTextArea chatArea = (JTextArea) chatBoxes.getComponentAt(i);
+							
+							chatArea.append(sender);
 							chatArea.append(message);
 							found = true;
 						}
@@ -514,8 +542,14 @@ public class IMUserInterface implements ActionListener {
 						}
 					} 
 					if (!found) {
-						JTextArea chatArea = new JTextArea();
-						chatBoxes.addTab(recipient, null, chatArea);
+						//JTextArea chatArea = new JTextArea();
+						JScrollPane scroller = new JScrollPane();
+						//ADD FORMATTING TO SCROLLER POSSIBLY?
+						JPanel listPane = new JPanel();
+						scroller.add(listPane);
+						listPane.setLayout(new BoxLayout(listPane, BoxLayout.Y_AXIS));
+						chatBoxes.addTab(recipient, null, listPane);
+						
 					}
 				} 
 			}	

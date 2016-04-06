@@ -45,8 +45,25 @@ public class IMUserInterfaceTest {
 		IMEventListener messagelistener = gui.getMessageListenerInstance();
 		mimc.addIMEventListener(messagelistener);
 		mimc.useUserOnline("Dave");
-		assertEquals("Dave should be returned.", "Dave", gui.getComboBox()
-				.getItemAt(1));
+		assertEquals("Dave should be returned.", "Dave", gui.getList()
+				.getElementAt(1));
+	}
+	
+	@Test
+	public void testUserOnlinePhase3() {
+		IMEventListener messagelistener = gui.getMessageListenerInstance();
+		mimc.addIMEventListener(messagelistener);
+		mimc.useUserOnline("Dave");
+		assertEquals("Dave should be returned.", "Dave", gui.getList().getElementAt(1));
+	}
+	
+	@Test
+	public void testUserOfflinePhase3() {
+		IMEventListener messagelistener = gui.getMessageListenerInstance();
+		mimc.addIMEventListener(messagelistener);
+		mimc.useUserOffline("Dave");
+		assertNull("Dave should no longer be in the combo box.", gui
+				.getList().getElementAt(1));
 	}
 
 	/**
@@ -58,7 +75,7 @@ public class IMUserInterfaceTest {
 		mimc.addIMEventListener(messagelistener);
 		mimc.useUserOffline("Dave");
 		assertNull("Dave should no longer be in the combo box.", gui
-				.getComboBox().getItemAt(1));
+				.getList().getElementAt(1));
 	}
 
 	/**
@@ -94,12 +111,11 @@ public class IMUserInterfaceTest {
 	@Test
 	public void testSendMessage() {
 		MockSendMessage m1 = new MockSendMessage();
-		gui.getComboBox().addItem("Dave");
-		gui.getComboBox().addItem("Johnny");
+		gui.getList().addElement("Dave");
+		gui.getList().addElement("Johnny");
 		gui.setUser(m1);
 
 		// Sending message to Dave
-		gui.getComboBox().setSelectedIndex(1);
 		gui.getMessageBox().setText("Hi, Daaaaaavvveeeeeeeeeee!!!!!!!");
 		gui.getSendButton().doClick();
 		assertEquals("Wrong Message", "Hi, Daaaaaavvveeeeeeeeeee!!!!!!!",
@@ -107,7 +123,6 @@ public class IMUserInterfaceTest {
 		assertEquals("Wrong Person", "", m1.getJohnnyMessage());
 
 		// Sending Message to Johnny
-		gui.getComboBox().setSelectedIndex(2);
 		gui.getMessageBox().setText("Hey, nice shirt dude.");
 		gui.getSendButton().doClick();
 		assertEquals("Wrong Message", "Hey, nice shirt dude.",
