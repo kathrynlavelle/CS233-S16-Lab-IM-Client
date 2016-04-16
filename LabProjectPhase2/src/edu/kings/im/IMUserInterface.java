@@ -4,23 +4,22 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Event;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Image;
-import java.awt.ScrollPane;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -33,19 +32,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.JTextPane;
 import javax.swing.JViewport;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-
-import edu.kings.im.IMConnection;
-import edu.kings.im.IMEventListener;
-import edu.kings.im.IllegalNameException;
-import edu.kings.im.Message;
-import edu.kings.im.RealIMConnection;
-import edu.kings.im.StatusListener;
 
 /**
  * GUI for Instant Messaging.
@@ -58,13 +49,19 @@ public class IMUserInterface implements ActionListener {
 
 	/** Represents the name for all users. */
 	public final static String BLAST;
-
-	private JFrame buddyFrame;
-	private JList<String> userList;
-	private DefaultListModel<String> listModel;
-	private String recipient;
-	private ImageIcon icon;
 	
+	/** The buddyframe. */
+	private JFrame buddyFrame;
+	
+	/** The list of online users for buddyframe. */
+	private JList<String> userList;
+	
+	/** The listModel for the online users. */
+	private DefaultListModel<String> listModel;
+	
+	/** Currently selected buddy. */
+	private String recipient;
+
 	/** Chat frame. */
 	private JFrame frame;
 
@@ -77,8 +74,10 @@ public class IMUserInterface implements ActionListener {
 	/** Button to send messages. */
 	private JButton sendButton;
 
-	/** Menu bar. */
+	/** Menu bar for chat frame. */
 	private JMenuBar menuBar;
+	
+	/** Menu bar for buddy frame. */
 	private JMenuBar buddyMenuBar;
 
 	/** Login frame. */
@@ -98,45 +97,66 @@ public class IMUserInterface implements ActionListener {
 	 * Constructor.
 	 */
 	public IMUserInterface() {
-		icon = new ImageIcon("NullPointDexter Logo.jpg");
-		
-		
+		//Setup for the buddy list frame.
 		buddyFrame = new JFrame("Buddy Frame");
 		buddyFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		buddyFrame.setPreferredSize(new Dimension(600, 600));
-		
+		buddyFrame.setPreferredSize(new Dimension(300, 600));
+		buddyFrame.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent windowEvent) {
+				if (JOptionPane.showConfirmDialog(frame,
+						"Are you sure you want to close this window?",
+						"Really?", JOptionPane.YES_NO_OPTION,
+						JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) 
+				{
+					closeWindow();
+				}
+			}
+		});
+
+		// Setup for the buddylist
 		listModel = new DefaultListModel<String>();
 		userList = new JList<String>(listModel);
 		userList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 		userList.setLayoutOrientation(JList.VERTICAL);
 		userList.setVisibleRowCount(-1);
 		userList.addListSelectionListener(new BuddyListSelectionListener());
-		
+		userList.setBackground(Color.DARK_GRAY);
+		userList.setForeground(Color.GREEN);
 		buddyFrame.add(userList, BorderLayout.CENTER);
-		
+		listModel.addElement(BLAST);
+
 		// Chat frame set up
 		frame = new JFrame("Chat Frame");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setPreferredSize(new Dimension(600, 600));
-		
+		frame.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent windowEvent) {
+				if (JOptionPane.showConfirmDialog(frame,
+						"Are you sure you want to close this window?",
+						"Really?", JOptionPane.YES_NO_OPTION,
+						JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) 
+				{
+					closeWindow();
+				}
+			}
+		});
+
 		// Add tabbed pane to chat frame.
 		chatBoxes = new JTabbedPane();
 		frame.add(chatBoxes, BorderLayout.NORTH);
-		
+
 		// Setup the chat box.
 		chatBox = new JTextArea();
 		chatBox.setLineWrap(true);
 		chatBox.setEditable(false);
 
-		//JScrollPane scrollPane = new JScrollPane();
-		//scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-		//scrollPane.setViewportView(chatBox);
-		//frame.add(scrollPane, BorderLayout.CENTER);
-
 		// Setup message area in chat frame.
 		JPanel messageArea = new JPanel(new GridBagLayout());
 		GridBagConstraints messageConstraints = new GridBagConstraints();
 
+		// Text field used to send messages.
 		messageBox = new JTextField();
 		messageBox.setBorder(BorderFactory.createTitledBorder("Enter Message"));
 		messageBox.addActionListener(this);
@@ -151,13 +171,10 @@ public class IMUserInterface implements ActionListener {
 		// Send button & user list.
 		JPanel userSend = new JPanel(new GridLayout());
 
-		//users = new JComboBox<String>();
-		//users.addItem(BLAST);
-
 		sendButton = new JButton("Send");
 		sendButton.addActionListener(this);
 
-		//userSend.add(users);
+		// userSend.add(users);
 		userSend.add(sendButton);
 
 		messageConstraints.fill = GridBagConstraints.BOTH;
@@ -172,14 +189,14 @@ public class IMUserInterface implements ActionListener {
 		menuBar = new JMenuBar();
 		buddyMenuBar = new JMenuBar();
 
+		// File menus and exit items
 		JMenu file = new JMenu("File");
 		file.setMnemonic(KeyEvent.VK_F);
 		menuBar.add(file);
-		
+
 		JMenu buddyFile = new JMenu("File");
 		buddyFile.setMnemonic(KeyEvent.VK_F);
 		buddyMenuBar.add(buddyFile);
-		
 
 		JMenuItem exit = new JMenuItem("Exit");
 		exit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F4,
@@ -190,7 +207,7 @@ public class IMUserInterface implements ActionListener {
 				closeWindow();
 			}
 		});
-		
+
 		JMenuItem buddyExit = new JMenuItem("Exit");
 		buddyExit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F4,
 				Event.ALT_MASK));
@@ -204,11 +221,12 @@ public class IMUserInterface implements ActionListener {
 		file.add(exit);
 		buddyFile.add(buddyExit);
 
-		frame.setJMenuBar(menuBar); //Add menubar to chat frame.
-		buddyFrame.setJMenuBar(buddyMenuBar); //Add menubar to buddy frame.
-		frame.setVisible(false); //Set chat frame to false until login is successful.
+		frame.setJMenuBar(menuBar); // Add menubar to chat frame.
+		buddyFrame.setJMenuBar(buddyMenuBar); // Add menubar to buddy frame.
+		frame.setVisible(false); // Set chat frame to false until login is
+									// successful.
 
-		loginSetup(); //Setup login frame.
+		loginSetup(); // Setup login frame.
 	}
 
 	/**
@@ -217,7 +235,18 @@ public class IMUserInterface implements ActionListener {
 	 * @return the chatBox.
 	 */
 	protected JTextArea getTextArea() {
-		return chatBox;
+		JScrollPane scrollPane = (JScrollPane) chatBoxes.getComponentAt(0);
+		JViewport viewPort = scrollPane.getViewport();
+		JTextArea chatArea = (JTextArea) viewPort.getComponent(0);
+		return chatArea;
+	}
+
+	/**
+	 * Getter for tabbed area. FOR TESTING PURPOSES ONLY !
+	 * @return the chatBoxes.
+	 */
+	protected JTabbedPane getChatBoxes() {
+		return chatBoxes;
 	}
 
 	/**
@@ -237,10 +266,11 @@ public class IMUserInterface implements ActionListener {
 	protected JButton getSendButton() {
 		return sendButton;
 	}
-	
+
 	/**
 	 * Getter for buddy listModel. FOR TESTING PURPOSES ONLY !
-	 * @return
+	 * 
+	 * @return the listModel from the buddy list. 
 	 */
 	protected DefaultListModel<String> getList() {
 		return listModel;
@@ -254,9 +284,11 @@ public class IMUserInterface implements ActionListener {
 		loginFrame = new JFrame("Login");
 		loginFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		loginFrame.setSize(500, 500);
+		// loginFrame.getContentPane().setBackground(Color.DARK_GRAY);
 
 		JPanel loginPanel = new JPanel(new GridBagLayout());
 		GridBagConstraints loginC = new GridBagConstraints();
+		loginPanel.setBackground(Color.DARK_GRAY);
 
 		// Adding logo.
 		loginC.fill = GridBagConstraints.BOTH;
@@ -270,7 +302,7 @@ public class IMUserInterface implements ActionListener {
 
 		final JTextField NAME_ENTRY = new JTextField();
 		NAME_ENTRY.setBorder(BorderFactory.createTitledBorder("Username"));
-		
+
 		NAME_ENTRY.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -303,9 +335,9 @@ public class IMUserInterface implements ActionListener {
 		loginC.weightx = .7;
 		loginC.weighty = .1;
 
-		loginPanel.add(loginButton, loginC); //Add login button to login frame.
+		loginPanel.add(loginButton, loginC); // Add login button to login frame.
 
-		loginFrame.setVisible(true); //Make login frame visible.
+		loginFrame.setVisible(true); // Make login frame visible.
 	}
 
 	/**
@@ -321,14 +353,14 @@ public class IMUserInterface implements ActionListener {
 		try {
 			newUser.connect();
 		} catch (IllegalNameException ine) {
-			//JOptionPane.showMessageDialog(frame, ine.getMessage());
-			
+			System.out.println("Username error message displayed");
 			JPanel loginPanel2 = new JPanel(new GridBagLayout());
+			loginPanel2.setBackground(Color.DARK_GRAY);
 			JLabel incorrect = new JLabel("Please select a different Username");
-			incorrect.setForeground(Color.blue);
-			// TODO: Make the text bigger.
-			
-			loginPanel2.add(incorrect); //Error message for invalid username.
+			incorrect.setFont(new Font("Dialog", Font.BOLD, 16));
+			incorrect.setForeground(Color.yellow);
+
+			loginPanel2.add(incorrect); // Error message for invalid username.
 			loginFrame.add(loginPanel2, BorderLayout.SOUTH);
 			loginFrame.setSize(500, 550);
 		}
@@ -354,17 +386,24 @@ public class IMUserInterface implements ActionListener {
 	 */
 	public void sendMessage(String message, String toWhom) {
 		if (toWhom.equals(BLAST)) {
-			user.spamEveryone(message); //Spam all online users a message.
+			user.spamEveryone(message); // Spam all online users a message.
 		} else {
-			user.sendMessage(message, toWhom); //Send message to specifed recipient.
+			user.sendMessage(message, toWhom); // Send message to specifed
+												// recipient.
 		}
-		for(int i = 0; i < chatBoxes.getTabCount(); i++) {
-			if (toWhom.equals(chatBoxes.getTitleAt(i))) { //Get tab instance for specified recipient.
+		for (int i = 0; i < chatBoxes.getTabCount(); i++) {
+			if (toWhom.equals(chatBoxes.getTitleAt(i))) { // Get tab instance
+															// for specified
+															// recipient.
 				chatBoxes.setSelectedIndex(i);
-				JScrollPane scrollPane = (JScrollPane) chatBoxes.getComponentAt(i);
+				JScrollPane scrollPane = (JScrollPane) chatBoxes
+						.getComponentAt(i);
 				JViewport viewPort = scrollPane.getViewport();
 				JTextArea chatArea = (JTextArea) viewPort.getComponent(0);
-				chatArea.append("Me: \n\t" + message  + "\n");	//Append sent message to chatArea in tab.
+				chatArea.append("Me: \n\t" + message + "\n"); // Append sent
+																// message to
+																// chatArea in
+																// tab.
 			}
 		}
 	}
@@ -374,21 +413,29 @@ public class IMUserInterface implements ActionListener {
 	 */
 	private void closeWindow() {
 		user.disconnect();
+		System.out.println("Disconnected");
 		System.exit(0);
 	}
-	
+
 	/**
 	 * Gets a message from the messageBox and calls method to send it.
 	 */
 	@Override
 	public void actionPerformed(ActionEvent arg0) {
-		String msg = messageBox.getText(); //Get text from the message box.
-		int selectedIndex = chatBoxes.getSelectedIndex(); //Get the index of the recipient from the tabbed pane.
-		recipient = chatBoxes.getTitleAt(selectedIndex); //Set the recipient to the name of the tab at that index.
+		String msg = messageBox.getText(); // Get text from the message box.
+		int selectedIndex = chatBoxes.getSelectedIndex(); // Get the index of
+															// the recipient
+															// from the tabbed
+															// pane.
+		recipient = chatBoxes.getTitleAt(selectedIndex); // Set the recipient to
+															// the name of the
+															// tab at that
+															// index.
 		if (msg != null && !msg.trim().equals("")) {
-			sendMessage(msg, recipient); //Send message to recipient.
+			sendMessage(msg, recipient); // Send message to recipient.
 		}
-		messageBox.setText(""); //Remove text from message box after it is sent.
+		messageBox.setText(""); // Remove text from message box after it is
+								// sent.
 	}
 
 	/**
@@ -411,16 +458,22 @@ public class IMUserInterface implements ActionListener {
 		public void connectionUpdate(RealIMConnection arg0, boolean connected) {
 			if (connected) {
 				frame.pack();
-				frame.setLocationByPlatform(true); //Avoid hiding other frames by letting OS stagger them.
-				frame.setVisible(true); //Make chat frame visible.
-				
+				frame.setLocationByPlatform(true); // Avoid hiding other frames
+													// by letting OS stagger
+													// them.
+				frame.setVisible(true); // Make chat frame visible.
+
 				buddyFrame.pack();
-				buddyFrame.setLocationByPlatform(true); //Avoid hiding other frames by letting OS stagger them.
-				buddyFrame.setVisible(true); //Make buddy frame visible.
-				
-				loginFrame.dispose(); //Dispose of login frame.
-				arg0.addIMEventListener(new MessageListener()); //Add message listener to IMConnection.
-				setUser(arg0); //Set user for IMConnection.
+				buddyFrame.setLocationByPlatform(true); // Avoid hiding other
+														// frames by letting OS
+														// stagger them.
+				buddyFrame.setVisible(true); // Make buddy frame visible.
+
+				loginFrame.dispose(); // Dispose of login frame.
+				arg0.addIMEventListener(new MessageListener()); // Add message
+																// listener to
+																// IMConnection.
+				setUser(arg0); // Set user for IMConnection.
 			}
 		}
 	}
@@ -435,7 +488,11 @@ public class IMUserInterface implements ActionListener {
 	}
 
 	/**
-	 * This class implements IMEventListener. FOR TESTING PURPOSES ONLY !
+	 * This class implements IMEventListener.
+	 * It dislays all received messages from server.
+	 * 
+	 * @author Dave Paupst
+	 * @author Kate Lavelle
 	 */
 	private final class MessageListener implements IMEventListener {
 
@@ -445,33 +502,36 @@ public class IMUserInterface implements ActionListener {
 		@Override
 		public void messagesReceived(Iterable<Message> arg0) {
 			for (Message msg : arg0) {
-				String sender = String.format("%s\n\t", msg.getSender());
-				String message = String.format("%s\n", msg.getText());
+				String sender = msg.getSender();
+				String message = msg.getText();
 				boolean found = false;
 				if (chatBoxes.getTabCount() > 0) {
-					for(int i = 0; i < chatBoxes.getTabCount(); i++) {
-						if (recipient.equals(chatBoxes.getTitleAt(i))) {
-							JScrollPane scrollPane = (JScrollPane) chatBoxes.getComponentAt(i);
+					for (int i = 0; i < chatBoxes.getTabCount(); i++) {
+						if (sender.equals(chatBoxes.getTitleAt(i))) {
+							JScrollPane scrollPane = (JScrollPane) chatBoxes
+									.getComponentAt(i);
 							JViewport viewPort = scrollPane.getViewport();
-							JTextArea chatArea = (JTextArea) viewPort.getComponent(0);
-							
-							chatArea.append(sender);
-							chatArea.append(message);
+							JTextArea chatArea = (JTextArea) viewPort
+									.getComponent(0);
+							chatArea.append(sender + ": \n\t" + message + "\n");
 							found = true;
 						}
 					}
-				} 
+				}
 				if (!found) {
 					JTextArea chatArea = new JTextArea();
 					chatArea.setEditable(false);
-					
+					chatArea.setForeground(Color.WHITE);
+					chatArea.setBackground(Color.BLACK);
+
 					JScrollPane scrollPane = new JScrollPane();
 					scrollPane.setPreferredSize(new Dimension(600, 450));
-					scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+					scrollPane
+							.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 					scrollPane.setViewportView(chatArea);
-					
-					chatBoxes.addTab(recipient, null, scrollPane);
-					chatArea.append(message);
+
+					chatBoxes.addTab(sender, null, scrollPane);
+					chatArea.append(sender + ": \n\t" + message + "\n");
 				}
 			}
 		}
@@ -481,12 +541,11 @@ public class IMUserInterface implements ActionListener {
 		 */
 		@Override
 		public void userOffline(String arg0) {
-			//users.removeItem(arg0);
-			listModel.removeElement(arg0); //Remove name from buddy list.
-			//TODO: if there is a convo, close the tab
-			for(int i = 0; i < chatBoxes.getTabCount(); i++) {
+			listModel.removeElement(arg0); // Remove name from buddy list.
+			// If there is a convo, close the tab
+			for (int i = 0; i < chatBoxes.getTabCount(); i++) {
 				if (arg0.equals(chatBoxes.getTitleAt(i))) {
-					chatBoxes.removeTabAt(i); //Remove open tab.
+					chatBoxes.removeTabAt(i); // Remove open tab.
 				}
 			}
 		}
@@ -496,13 +555,15 @@ public class IMUserInterface implements ActionListener {
 		 */
 		@Override
 		public void userOnline(String arg0) {
-			//users.addItem(arg0);
-			listModel.addElement(arg0); //Add name to buddy list.
+			listModel.addElement(arg0); // Add name to buddy list.
 		}
 	}
 
 	/**
 	 * This class constructs the logo.
+	 * 
+	 * @author Dave Paupst
+	 * @author Kate Lavelle
 	 */
 	private final class ImageView extends JPanel {
 		/** Generated serial UID. */
@@ -527,10 +588,14 @@ public class IMUserInterface implements ActionListener {
 			g.drawImage(img, 0, 0, this.getWidth(), this.getHeight(), this);
 		}
 	}
-	
+
 	/**
+	 * The ListSelectionListener for the buddy list.
+	 * It gets the proper chat tab for the selected user on the list, or creates a new tab 
+	 * if there is not already a current chat session open for that user.
 	 * 
-	 * @author 
+	 * @author Dave Paupst
+	 * @author Kate Lavelle
 	 *
 	 */
 	private class BuddyListSelectionListener implements ListSelectionListener {
@@ -539,35 +604,44 @@ public class IMUserInterface implements ActionListener {
 		public void valueChanged(ListSelectionEvent arg0) {
 			if (arg0.getValueIsAdjusting() == false) {
 				if (userList.getSelectedIndex() != -1) {
-					String buddyListSelectedUser = listModel.getElementAt(userList.getSelectedIndex());
+					String buddyListSelectedUser = listModel
+							.getElementAt(userList.getSelectedIndex());
 					boolean found = false;
 					if (chatBoxes.getTabCount() > 0) {
-						for(int i = 0; i < chatBoxes.getTabCount(); i++) {
-							if (buddyListSelectedUser.equals(chatBoxes.getTitleAt(i))) {
+						for (int i = 0; i < chatBoxes.getTabCount(); i++) {
+							if (buddyListSelectedUser.equals(chatBoxes
+									.getTitleAt(i))) 
+							{
 								chatBoxes.setSelectedIndex(i);
 								found = true;
 							}
 						}
-					} 
+					}
 					if (!found) {
 						JTextArea chatArea = new JTextArea();
 						chatArea.setEditable(false);
-						
+						chatArea.setForeground(Color.WHITE);
+						chatArea.setBackground(Color.BLACK);
+
 						JScrollPane scrollPane = new JScrollPane();
 						scrollPane.setPreferredSize(new Dimension(600, 450));
-						scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+						scrollPane
+								.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
 						scrollPane.setViewportView(chatArea);
-						
-						chatBoxes.addTab(buddyListSelectedUser, null, scrollPane);
-						
-						for(int i = 0; i < chatBoxes.getTabCount(); i++) {
-							if (buddyListSelectedUser.equals(chatBoxes.getTitleAt(i))) {
+
+						chatBoxes.addTab(buddyListSelectedUser, null,
+								scrollPane);
+
+						for (int i = 0; i < chatBoxes.getTabCount(); i++) {
+							if (buddyListSelectedUser.equals(chatBoxes
+									.getTitleAt(i))) 
+							{
 								chatBoxes.setSelectedIndex(i);
 							}
 						}
 					}
-				} 
-			}	
-		}	
+				}
+			}
+		}
 	}
 }

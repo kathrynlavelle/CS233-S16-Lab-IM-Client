@@ -4,7 +4,7 @@ package edu.kings.im;
  * This is the main class that calls the gui.
  * 
  * @author Dave Paupst
- * @author Johnny Collado
+ * @author Kate Lavelle
  */
 public class Main {
 
