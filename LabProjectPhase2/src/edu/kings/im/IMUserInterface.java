@@ -20,6 +20,7 @@ import java.awt.event.WindowEvent;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -104,13 +105,7 @@ public class IMUserInterface implements ActionListener {
 		buddyFrame.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent windowEvent) {
-				if (JOptionPane.showConfirmDialog(frame,
-						"Are you sure you want to close this window?",
-						"Really?", JOptionPane.YES_NO_OPTION,
-						JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) 
-				{
-					closeWindow();
-				}
+				closeWindow();
 			}
 		});
 
@@ -133,18 +128,13 @@ public class IMUserInterface implements ActionListener {
 		frame.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent windowEvent) {
-				if (JOptionPane.showConfirmDialog(frame,
-						"Are you sure you want to close this window?",
-						"Really?", JOptionPane.YES_NO_OPTION,
-						JOptionPane.QUESTION_MESSAGE) == JOptionPane.YES_OPTION) 
-				{
-					closeWindow();
-				}
+				closeWindow();
 			}
 		});
 
 		// Add tabbed pane to chat frame.
 		chatBoxes = new JTabbedPane();
+		chatBoxes.setForeground(Color.blue);
 		frame.add(chatBoxes, BorderLayout.NORTH);
 
 		// Setup the chat box.
@@ -396,6 +386,7 @@ public class IMUserInterface implements ActionListener {
 															// for specified
 															// recipient.
 				chatBoxes.setSelectedIndex(i);
+				chatBoxes.getComponentAt(i).setForeground(Color.GREEN);
 				JScrollPane scrollPane = (JScrollPane) chatBoxes
 						.getComponentAt(i);
 				JViewport viewPort = scrollPane.getViewport();
