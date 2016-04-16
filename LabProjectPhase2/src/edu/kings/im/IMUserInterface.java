@@ -98,6 +98,7 @@ public class IMUserInterface implements ActionListener {
 	public IMUserInterface() {
 		icon = new ImageIcon("NullPointDexter Logo.jpg");
 		
+		
 		buddyFrame = new JFrame("Buddy Frame");
 		buddyFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		buddyFrame.setPreferredSize(new Dimension(600, 600));
@@ -126,10 +127,8 @@ public class IMUserInterface implements ActionListener {
 		chatBox.setEditable(false);
 
 		//JScrollPane scrollPane = new JScrollPane();
-		//scrollPane
-		//		.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		//scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		//scrollPane.setViewportView(chatBox);
-
 		//frame.add(scrollPane, BorderLayout.CENTER);
 
 		// Setup message area in chat frame.
@@ -359,12 +358,6 @@ public class IMUserInterface implements ActionListener {
 		}
 		for(int i = 0; i < chatBoxes.getTabCount(); i++) {
 			if (toWhom.equals(chatBoxes.getTitleAt(i))) { //Get tab instance for specified recipient.
-				
-				//JScrollPane scrollArea = (JScrollPane) chatBoxes.getComponentAt(i);
-				//JTextPane chatBubble = new JTextPane();
-				//chatBubble.setBackground(Color.YELLOW);
-				//chatBubble.setText("Me: \n\t" + message  + "\n");
-				//scrollArea.add(chatBubble);
 				chatBoxes.setSelectedIndex(i);
 				JTextArea chatArea = (JTextArea) chatBoxes.getComponentAt(i);
 				chatArea.append("Me: \n\t" + message  + "\n");	//Append sent message to chatArea in tab.
@@ -457,6 +450,7 @@ public class IMUserInterface implements ActionListener {
 							JTextArea chatArea = (JTextArea) chatBoxes.getComponentAt(i);
 							chatArea.append(sender);
 							chatArea.append(message);
+							frame.setTitle(sender);
 							found = true;
 						}
 					}
@@ -538,6 +532,7 @@ public class IMUserInterface implements ActionListener {
 					if (chatBoxes.getTabCount() > 0) {
 						for(int i = 0; i < chatBoxes.getTabCount(); i++) {
 							if (recipient.equals(chatBoxes.getTitleAt(i))) {
+								frame.setTitle(recipient);
 								chatBoxes.setSelectedIndex(i);
 								found = true;
 							}
@@ -551,6 +546,12 @@ public class IMUserInterface implements ActionListener {
 						//scroller.add(listPane);
 						//listPane.setLayout(new BoxLayout(listPane, BoxLayout.Y_AXIS));
 						chatBoxes.addTab(recipient, null, chatArea);
+						for(int i = 0; i < chatBoxes.getTabCount(); i++) {
+							if (recipient.equals(chatBoxes.getTitleAt(i))) {
+								frame.setTitle(recipient);
+								chatBoxes.setSelectedIndex(i);
+							}
+						}
 					}
 				} 
 			}	
