@@ -9,6 +9,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Image;
+import java.awt.ScrollPane;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -33,6 +34,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
+import javax.swing.JViewport;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
@@ -116,7 +118,7 @@ public class IMUserInterface implements ActionListener {
 		frame = new JFrame("Chat Frame");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setPreferredSize(new Dimension(600, 600));
-
+		
 		// Add tabbed pane to chat frame.
 		chatBoxes = new JTabbedPane();
 		frame.add(chatBoxes, BorderLayout.NORTH);
@@ -359,7 +361,9 @@ public class IMUserInterface implements ActionListener {
 		for(int i = 0; i < chatBoxes.getTabCount(); i++) {
 			if (toWhom.equals(chatBoxes.getTitleAt(i))) { //Get tab instance for specified recipient.
 				chatBoxes.setSelectedIndex(i);
-				JTextArea chatArea = (JTextArea) chatBoxes.getComponentAt(i);
+				JScrollPane scrollPane = (JScrollPane) chatBoxes.getComponentAt(i);
+				JViewport viewPort = scrollPane.getViewport();
+				JTextArea chatArea = (JTextArea) viewPort.getComponent(0);
 				chatArea.append("Me: \n\t" + message  + "\n");	//Append sent message to chatArea in tab.
 			}
 		}
@@ -447,17 +451,26 @@ public class IMUserInterface implements ActionListener {
 				if (chatBoxes.getTabCount() > 0) {
 					for(int i = 0; i < chatBoxes.getTabCount(); i++) {
 						if (recipient.equals(chatBoxes.getTitleAt(i))) {
-							JTextArea chatArea = (JTextArea) chatBoxes.getComponentAt(i);
+							JScrollPane scrollPane = (JScrollPane) chatBoxes.getComponentAt(i);
+							JViewport viewPort = scrollPane.getViewport();
+							JTextArea chatArea = (JTextArea) viewPort.getComponent(0);
+							
 							chatArea.append(sender);
 							chatArea.append(message);
-							frame.setTitle(sender);
 							found = true;
 						}
 					}
 				} 
 				if (!found) {
 					JTextArea chatArea = new JTextArea();
-					chatBoxes.addTab(recipient, null, chatArea);
+					chatArea.setEditable(false);
+					
+					JScrollPane scrollPane = new JScrollPane();
+					scrollPane.setPreferredSize(new Dimension(600, 450));
+					scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+					scrollPane.setViewportView(chatArea);
+					
+					chatBoxes.addTab(recipient, null, scrollPane);
 					chatArea.append(message);
 				}
 			}
@@ -526,13 +539,11 @@ public class IMUserInterface implements ActionListener {
 		public void valueChanged(ListSelectionEvent arg0) {
 			if (arg0.getValueIsAdjusting() == false) {
 				if (userList.getSelectedIndex() != -1) {
-					recipient = listModel.getElementAt(userList.getSelectedIndex());
-					frame.setTitle(recipient);
+					String buddyListSelectedUser = listModel.getElementAt(userList.getSelectedIndex());
 					boolean found = false;
 					if (chatBoxes.getTabCount() > 0) {
 						for(int i = 0; i < chatBoxes.getTabCount(); i++) {
-							if (recipient.equals(chatBoxes.getTitleAt(i))) {
-								frame.setTitle(recipient);
+							if (buddyListSelectedUser.equals(chatBoxes.getTitleAt(i))) {
 								chatBoxes.setSelectedIndex(i);
 								found = true;
 							}
@@ -540,15 +551,17 @@ public class IMUserInterface implements ActionListener {
 					} 
 					if (!found) {
 						JTextArea chatArea = new JTextArea();
-						//JScrollPane scroller = new JScrollPane();
-						//ADD FORMATTING TO SCROLLER POSSIBLY?
-						//JPanel listPane = new JPanel();
-						//scroller.add(listPane);
-						//listPane.setLayout(new BoxLayout(listPane, BoxLayout.Y_AXIS));
-						chatBoxes.addTab(recipient, null, chatArea);
+						chatArea.setEditable(false);
+						
+						JScrollPane scrollPane = new JScrollPane();
+						scrollPane.setPreferredSize(new Dimension(600, 450));
+						scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+						scrollPane.setViewportView(chatArea);
+						
+						chatBoxes.addTab(buddyListSelectedUser, null, scrollPane);
+						
 						for(int i = 0; i < chatBoxes.getTabCount(); i++) {
-							if (recipient.equals(chatBoxes.getTitleAt(i))) {
-								frame.setTitle(recipient);
+							if (buddyListSelectedUser.equals(chatBoxes.getTitleAt(i))) {
 								chatBoxes.setSelectedIndex(i);
 							}
 						}
