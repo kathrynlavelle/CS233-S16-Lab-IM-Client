@@ -16,11 +16,15 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 
+import javax.swing.AbstractListModel;
 import javax.swing.BorderFactory;
-import javax.swing.DefaultListModel;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -29,6 +33,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
@@ -51,6 +56,12 @@ public class IMUserInterface implements ActionListener {
 	/** Represents the name for all users. */
 	public final static String BLAST;
 	
+	/** Logged in order. */
+	private static int loggedInOrder = 0;
+	
+	/** Sent message order. */
+	private static int sentMessageOrder = 0;
+	
 	/** The buddyframe. */
 	private JFrame buddyFrame;
 	
@@ -58,7 +69,9 @@ public class IMUserInterface implements ActionListener {
 	private JList<String> userList;
 	
 	/** The listModel for the online users. */
-	private DefaultListModel<String> listModel;
+	private ArrayList<User> buddyList;
+	
+	private ArrayList<String> buddyListNames;
 	
 	/** Currently selected buddy. */
 	private String recipient;
@@ -89,6 +102,10 @@ public class IMUserInterface implements ActionListener {
 
 	/** TabbedPane to hold chat tabs. */
 	private JTabbedPane chatBoxes;
+	
+	private JRadioButtonMenuItem alpha;
+	private JRadioButtonMenuItem logged;
+	private JRadioButtonMenuItem sent;
 
 	static {
 		BLAST = "EVERYONE";
@@ -97,6 +114,7 @@ public class IMUserInterface implements ActionListener {
 	/**
 	 * Constructor.
 	 */
+	@SuppressWarnings("serial")
 	public IMUserInterface() {
 		//Setup for the buddy list frame.
 		buddyFrame = new JFrame("Buddy Frame");
@@ -110,16 +128,26 @@ public class IMUserInterface implements ActionListener {
 		});
 
 		// Setup for the buddylist
-		listModel = new DefaultListModel<String>();
-		userList = new JList<String>(listModel);
+		//listModel = new DefaultListModel<String>();
+		userList = new JList<String>();
 		userList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 		userList.setLayoutOrientation(JList.VERTICAL);
 		userList.setVisibleRowCount(-1);
 		userList.addListSelectionListener(new BuddyListSelectionListener());
 		userList.setBackground(Color.DARK_GRAY);
 		userList.setForeground(Color.GREEN);
+		buddyList = new ArrayList<User>();
+		buddyListNames = new ArrayList<String>();
+		userList.setModel(new AbstractListModel<String>() {
+			public int getSize() {
+				return buddyListNames.size();
+			}
+			public String getElementAt(int i) {
+				buddyFrame.repaint();
+				return buddyListNames.get(i);				
+			}
+		});
 		buddyFrame.add(userList, BorderLayout.CENTER);
-		listModel.addElement(BLAST);
 
 		// Chat frame set up
 		frame = new JFrame("Chat Frame");
@@ -207,7 +235,46 @@ public class IMUserInterface implements ActionListener {
 				closeWindow();
 			}
 		});
-
+		
+		JMenu options = new JMenu("Options");
+		buddyMenuBar.add(options);		
+		ButtonGroup radioButtons = new ButtonGroup();
+		alpha = new JRadioButtonMenuItem("Alphabetical");
+		logged = new JRadioButtonMenuItem("Logged in");
+		sent = new JRadioButtonMenuItem("Sent to");
+		radioButtons.add(alpha);
+		radioButtons.add(logged);
+		radioButtons.add(sent);		
+		options.add(alpha);
+		options.add(logged);
+		options.add(sent);
+		alpha.setSelected(true);
+		alpha.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				Collections.sort(buddyList, new NameComparator());
+				nameSort();
+				buddyFrame.repaint();
+			}			
+		});
+		logged.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Collections.sort(buddyList, new LoggedInOrderComparator());
+				nameSort();
+				buddyFrame.repaint();
+			}			
+		});
+		sent.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				Collections.sort(buddyList, new LastSentComparator());
+				nameSort();
+				buddyFrame.repaint();
+			}			
+		});
+		buddyMenuBar.add(options);
+		
 		file.add(exit);
 		buddyFile.add(buddyExit);
 
@@ -219,6 +286,23 @@ public class IMUserInterface implements ActionListener {
 		loginSetup(); // Setup login frame.
 	}
 
+	
+	@SuppressWarnings("serial")
+	private void nameSort() {
+		buddyListNames.clear();
+		for(int i = 0; i < buddyList.size(); i++) {
+			buddyListNames.add(buddyList.get(i).getName());			
+		}
+		userList.setModel(new AbstractListModel<String>() {
+			public int getSize() {
+				return buddyListNames.size();
+			}
+			public String getElementAt(int i) {
+				buddyFrame.repaint();
+				return buddyListNames.get(i);				
+			}
+		});
+	}
 	/**
 	 * Getter for text area. FOR TESTING PURPOSES ONLY !
 	 * 
@@ -262,9 +346,9 @@ public class IMUserInterface implements ActionListener {
 	 * 
 	 * @return the listModel from the buddy list. 
 	 */
-	protected DefaultListModel<String> getList() {
-		return listModel;
-	}
+//	protected DefaultListModel<String> getList() {
+//		return listModel;
+//	}
 
 	/**
 	 * Sets up the login frame.
@@ -375,27 +459,46 @@ public class IMUserInterface implements ActionListener {
 	 *            User who is receiving message.
 	 */
 	public void sendMessage(String message, String toWhom) {
-		if (toWhom.equals(BLAST)) {
-			user.spamEveryone(message); // Spam all online users a message.
-		} else {
-			user.sendMessage(message, toWhom); // Send message to specifed
-												// recipient.
-		}
-		for (int i = 0; i < chatBoxes.getTabCount(); i++) {
-			if (toWhom.equals(chatBoxes.getTitleAt(i))) { // Get tab instance
-															// for specified
-															// recipient.
-				chatBoxes.setSelectedIndex(i);
-				chatBoxes.getComponentAt(i).setForeground(Color.GREEN);
-				JScrollPane scrollPane = (JScrollPane) chatBoxes
-						.getComponentAt(i);
-				JViewport viewPort = scrollPane.getViewport();
-				JTextArea chatArea = (JTextArea) viewPort.getComponent(0);
-				chatArea.append("Me: \n\t" + message + "\n"); // Append sent
-																// message to
-																// chatArea in
-																// tab.
+		if (toWhom != null) {
+			boolean found = false;
+			int counter = 0;
+			while (!found && counter < buddyList.size()) {
+				if (buddyList.get(counter).getName().equals(toWhom)) {
+					found = true;
+					sentMessageOrder++;
+					buddyList.get(counter).setLastSentTime(sentMessageOrder);
+					if (sent.isSelected()) {
+						Collections.sort(buddyList, new LastSentComparator());
+						nameSort();
+						buddyFrame.repaint();
+					}
+				}
+				counter++;
 			}
+			if (toWhom.equals(BLAST)) {
+				user.spamEveryone(message); // Spam all online users a message.
+			} else {
+				user.sendMessage(message, toWhom); // Send message to specifed
+													// recipient.
+			}
+			for (int i = 0; i < chatBoxes.getTabCount(); i++) {
+				if (toWhom.equals(chatBoxes.getTitleAt(i))) { // Get tab instance
+																// for specified
+																// recipient.
+					chatBoxes.setSelectedIndex(i);
+					chatBoxes.getComponentAt(i).setForeground(Color.GREEN);
+					JScrollPane scrollPane = (JScrollPane) chatBoxes
+							.getComponentAt(i);
+					JViewport viewPort = scrollPane.getViewport();
+					JTextArea chatArea = (JTextArea) viewPort.getComponent(0);
+					chatArea.append("Me: \n\t" + message + "\n"); // Append sent
+																	// message to
+																	// chatArea in
+																	// tab.
+				}
+			}
+		} else {
+			JOptionPane.showMessageDialog(buddyFrame, "Why don't you have any friends?");
 		}
 	}
 
@@ -418,15 +521,18 @@ public class IMUserInterface implements ActionListener {
 															// the recipient
 															// from the tabbed
 															// pane.
-		recipient = chatBoxes.getTitleAt(selectedIndex); // Set the recipient to
-															// the name of the
-															// tab at that
-															// index.
-		if (msg != null && !msg.trim().equals("")) {
-			sendMessage(msg, recipient); // Send message to recipient.
+		if (selectedIndex >= 0) {
+			recipient = chatBoxes.getTitleAt(selectedIndex); // Set the recipient to
+																// the name of the
+																// tab at that
+																// index.
+			if (msg != null && !msg.trim().equals("")) {
+				sendMessage(msg, recipient); // Send message to recipient.
+			}
+			messageBox.setText("");	// Remove text from message box after it is sent.
+		} else {
+			JOptionPane.showMessageDialog(buddyFrame, "Why don't you have any friends?");
 		}
-		messageBox.setText(""); // Remove text from message box after it is
-								// sent.
 	}
 
 	/**
@@ -532,8 +638,7 @@ public class IMUserInterface implements ActionListener {
 		 */
 		@Override
 		public void userOffline(String arg0) {
-			listModel.removeElement(arg0); // Remove name from buddy list.
-			// If there is a convo, close the tab
+			// TODO: Loop through to find user to remove
 			for (int i = 0; i < chatBoxes.getTabCount(); i++) {
 				if (arg0.equals(chatBoxes.getTitleAt(i))) {
 					chatBoxes.removeTabAt(i); // Remove open tab.
@@ -546,7 +651,22 @@ public class IMUserInterface implements ActionListener {
 		 */
 		@Override
 		public void userOnline(String arg0) {
-			listModel.addElement(arg0); // Add name to buddy list.
+			User buddy = new User(arg0, loggedInOrder);
+			buddyList.add(buddy);
+			loggedInOrder++;
+			if (alpha.isSelected()) {
+				Collections.sort(buddyList, new NameComparator());
+				nameSort();
+				buddyFrame.repaint();
+			} else if (logged.isSelected()) {
+				Collections.sort(buddyList, new LoggedInOrderComparator());
+				nameSort();
+				buddyFrame.repaint();
+			} else {
+				Collections.sort(buddyList, new LastSentComparator());
+				nameSort();
+				buddyFrame.repaint();
+			}
 		}
 	}
 
@@ -595,8 +715,8 @@ public class IMUserInterface implements ActionListener {
 		public void valueChanged(ListSelectionEvent arg0) {
 			if (arg0.getValueIsAdjusting() == false) {
 				if (userList.getSelectedIndex() != -1) {
-					String buddyListSelectedUser = listModel
-							.getElementAt(userList.getSelectedIndex());
+					String buddyListSelectedUser = userList.getSelectedValue(); 
+							//listModel.getElementAt(userList.getSelectedIndex());
 					boolean found = false;
 					if (chatBoxes.getTabCount() > 0) {
 						for (int i = 0; i < chatBoxes.getTabCount(); i++) {
@@ -634,5 +754,32 @@ public class IMUserInterface implements ActionListener {
 				}
 			}
 		}
+	}
+	
+	private class NameComparator implements Comparator<User> {
+		@Override
+		public int compare(User u1, User u2) {
+			String name1 = u1.getName();
+			String name2 = u2.getName();
+			return name1.compareToIgnoreCase(name2);
+		}		
+	}
+	
+	private class LoggedInOrderComparator implements Comparator<User> {
+		@Override
+		public int compare(User u1, User u2) {
+			int loggedIn1 = u1.getLoggedInTime();
+			int loggedIn2 = u2.getLoggedInTime();
+			return loggedIn1 - loggedIn2;
+		}		
+	}
+	
+	private class LastSentComparator implements Comparator<User> {
+		@Override
+		public int compare(User u1, User u2) {
+			int lastSent1 = u1.getLastSentTime();
+			int lastSent2 = u2.getLastSentTime();
+			return lastSent2 - lastSent1;
+		}		
 	}
 }
