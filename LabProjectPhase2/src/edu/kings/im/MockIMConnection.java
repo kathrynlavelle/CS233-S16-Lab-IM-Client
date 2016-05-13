@@ -8,7 +8,7 @@ import edu.kings.cs.util.List;
  * This class mocks a message listener for testing purposes.
  * 
  * @author Dave Paupst
- * @author Johnny Collado
+ * @author Kate Lavelle
  */
 public class MockIMConnection implements IMConnection {
 

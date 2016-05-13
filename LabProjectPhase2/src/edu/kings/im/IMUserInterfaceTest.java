@@ -88,7 +88,59 @@ public class IMUserInterfaceTest {
 	public void testSendMessage() {
 		MockSendMessage m1 = new MockSendMessage();
 		gui.setUser(m1);
+	}
+	
+	
+	/**
+	 * Test to check that the JList is properly updated when called to sort alphabetically.
+	 */
+	@Test
+	public void testBuddyListAlpha() {
+		IMEventListener messagelistener = gui.getMessageListenerInstance();
+		mimc.addIMEventListener(messagelistener);
+		mimc.useUserOnline("Dave");
+		mimc.useUserOnline("Kate");
+		mimc.useUserOnline("Will");
+		mimc.useUserOnline("Bailey");
+		mimc.useUserOnline("BoatyMcBoatface");
 		
-
+		// select alpha radio
+		// assert equals each user at correct index.
+		
+		assertEquals("Dave should be returned.", "Dave", gui.getList().getElementAt(0));
+	}
+	
+	/**
+	 * Test to check that the JList is properly updated when called to sort by logged in time.
+	 */
+	@Test
+	public void testBuddyListLoggedIn() {
+		IMEventListener messagelistener = gui.getMessageListenerInstance();
+		mimc.addIMEventListener(messagelistener);
+		mimc.useUserOnline("Dave");
+		mimc.useUserOnline("Kate");
+		mimc.useUserOnline("Will");
+		mimc.useUserOnline("Bailey");
+		mimc.useUserOnline("BoatyMcBoatface");
+		
+		// select loggedIn radio
+		// assert equals each user at correct index.
+	}
+	
+	/**
+	 * Test to check that the JList is properly updated when called to sort by sent to time.
+	 */
+	@Test
+	public void testBuddyListSentTo() {
+		IMEventListener messagelistener = gui.getMessageListenerInstance();
+		mimc.addIMEventListener(messagelistener);
+		mimc.useUserOnline("Dave");
+		mimc.useUserOnline("Kate");
+		mimc.useUserOnline("Will");
+		mimc.useUserOnline("Bailey");
+		mimc.useUserOnline("BoatyMcBoatface");
+		
+		// select sentTo radio
+		// assert equals each user at correct index.
 	}
 }

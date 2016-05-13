@@ -3,7 +3,8 @@ package edu.kings.im;
 /**
  * This class simulates sending a message to a specified user.
  * 
- * @author guest-E4jE7j
+ * @author Dave Paupst
+ * @author Kate Lavelle
  *
  */
 public class MockSendMessage implements IMConnection {
