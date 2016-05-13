@@ -14,7 +14,7 @@ public class MockIMConnection implements IMConnection {
 
 	/** Instance of the IMEventListener. */
 	private IMEventListener messageListener;
-
+	
 	/**
 	 * Accesses the userOnline method from messageListener.
 	 * 

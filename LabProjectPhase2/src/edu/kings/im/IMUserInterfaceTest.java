@@ -105,9 +105,16 @@ public class IMUserInterfaceTest {
 		mimc.useUserOnline("BoatyMcBoatface");
 		
 		// select alpha radio
+		JRadioButtonMenuItem alpha = gui.getAlphaRadioButton();
+		alpha.setSelected(true);
+		
 		// assert equals each user at correct index.
 		
-		assertEquals("Dave should be returned.", "Dave", gui.getList().getElementAt(0));
+		assertEquals("Bailey", gui.getList().getElementAt(0));
+		assertEquals("BoatyMcBoatface", gui.getList().getElementAt(1));
+		assertEquals("Dave", gui.getList().getElementAt(2));
+		assertEquals("Kate", gui.getList().getElementAt(3));
+		assertEquals("Will", gui.getList().getElementAt(4));
 	}
 	
 	/**
@@ -118,13 +125,22 @@ public class IMUserInterfaceTest {
 		IMEventListener messagelistener = gui.getMessageListenerInstance();
 		mimc.addIMEventListener(messagelistener);
 		mimc.useUserOnline("Dave");
+		mimc.useUserOnline("BoatyMcBoatface");
 		mimc.useUserOnline("Kate");
 		mimc.useUserOnline("Will");
 		mimc.useUserOnline("Bailey");
-		mimc.useUserOnline("BoatyMcBoatface");
 		
-		// select loggedIn radio
+		
+		// select loggedIn radio.
+		JRadioButtonMenuItem logged = gui.getLoggedRadioButton();
+		logged.setSelected(true);
+		
 		// assert equals each user at correct index.
+		assertEquals("Bailey", gui.getList().getElementAt(0));
+		assertEquals("BoatyWillMcBoatface", gui.getList().getElementAt(1));
+		assertEquals("Kate", gui.getList().getElementAt(2));
+		assertEquals("BoatyMcBoatface", gui.getList().getElementAt(3));
+		assertEquals("Dave", gui.getList().getElementAt(4));
 	}
 	
 	/**
@@ -140,7 +156,12 @@ public class IMUserInterfaceTest {
 		mimc.useUserOnline("Bailey");
 		mimc.useUserOnline("BoatyMcBoatface");
 		
-		// select sentTo radio
+		// send message to a user.
+		
+		// select sentTo radio.
+		JRadioButtonMenuItem sent = gui.getSentRadioButton();
+		sent.setSelected(true);
+		
 		// assert equals each user at correct index.
 	}
 }

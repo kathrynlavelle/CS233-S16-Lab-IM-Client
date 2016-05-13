@@ -103,8 +103,13 @@ public class IMUserInterface implements ActionListener {
 	/** TabbedPane to hold chat tabs. */
 	private JTabbedPane chatBoxes;
 	
+	/** Radio button to sort buddy list alphabetically. */
 	private JRadioButtonMenuItem alpha;
+	
+	/** Radio button to sort buddy list by logged in time. */
 	private JRadioButtonMenuItem logged;
+	
+	/** Radio button to sort buddy list by sent to time. */
 	private JRadioButtonMenuItem sent;
 
 	static {
@@ -339,6 +344,18 @@ public class IMUserInterface implements ActionListener {
 	 */
 	protected JButton getSendButton() {
 		return sendButton;
+	}
+	
+	protected JRadioButtonMenuItem getAlphaRadioButton() {
+		return alpha;
+	}
+	
+	protected JRadioButtonMenuItem getLoggedRadioButton() {
+		return logged;
+	}
+	
+	protected JRadioButtonMenuItem getSentRadioButton() {
+		return sent;
 	}
 
 	/**
@@ -756,6 +773,7 @@ public class IMUserInterface implements ActionListener {
 		}
 	}
 	
+	/** Private inner User comparator by name. */
 	private class NameComparator implements Comparator<User> {
 		@Override
 		public int compare(User u1, User u2) {
@@ -765,6 +783,7 @@ public class IMUserInterface implements ActionListener {
 		}		
 	}
 	
+	/** Private inner User comparator by logged in time. */
 	private class LoggedInOrderComparator implements Comparator<User> {
 		@Override
 		public int compare(User u1, User u2) {
@@ -774,6 +793,7 @@ public class IMUserInterface implements ActionListener {
 		}		
 	}
 	
+	/** Private inner User comparator by sent to time. */
 	private class LastSentComparator implements Comparator<User> {
 		@Override
 		public int compare(User u1, User u2) {
